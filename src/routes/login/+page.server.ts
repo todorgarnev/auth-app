@@ -12,7 +12,7 @@ export const load: PageServerLoad = async () => {
   // todo
 };
 
-const register: Action = async ({ request }) => {
+const login: Action = async ({ cookies, request }) => {
   const data = await request.formData();
   const username = data.get("username");
   const password = data.get("password");
@@ -30,20 +30,30 @@ const register: Action = async ({ request }) => {
     where: { username }
   });
 
-  if (user) {
-    return invalid(400, { user: true });
+  if (!user) {
+    return invalid(400, { credentials: true });
   }
 
-  await db.user.create({
-    data: {
-      username,
-      passwordHash: await bcrypt.hash(password, 10),
-      token: crypto.randomUUID(),
-      role: { connect: { name: Roles.USER } }
-    }
+  const userPassword = await bcrypt.compare(password, user.passwordHash);
+
+  if (!userPassword) {
+    return invalid(400, { credentials: true });
+  }
+
+  const authUser = await db.user.update({
+    where: { username: user.username },
+    data: { token: crypto.randomUUID() }
   });
 
-  throw redirect(302, "/login");
+  cookies.set("session", authUser.token, {
+    path: "/",
+    httpOnly: true,
+    sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 60 * 24 * 30
+  });
+
+  throw redirect(302, "/");
 };
 
-export const actions: Actions = { register };
+export const actions: Actions = { login };
