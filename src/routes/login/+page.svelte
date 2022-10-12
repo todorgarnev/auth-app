@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { applyAction, enhance } from "$app/forms";
+  import { invalidateAll } from "$app/navigation";
   import type { ActionData } from "./$types";
 
   export let form: ActionData;
@@ -6,7 +8,16 @@
 
 <h1>Log in</h1>
 
-<form action="?/login" method="POST">
+<form
+  action="?/login"
+  method="POST"
+  use:enhance={() => {
+    return async ({ result }) => {
+      invalidateAll();
+      await applyAction(result);
+    };
+  }}
+>
   <div>
     <label for="username">Username</label>
     <input id="username" name="username" type="text" required />
