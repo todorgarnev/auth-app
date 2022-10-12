@@ -3,13 +3,10 @@ import type { Action, Actions, PageServerLoad } from "./$types";
 import { db } from "$lib/database";
 import bcrypt from "bcrypt";
 
-enum Roles {
-  ADMIN = "ADMIN",
-  USER = "USER"
-}
-
-export const load: PageServerLoad = async () => {
-  // todo
+export const load: PageServerLoad = async ({ locals }) => {
+  if (locals.user) {
+    throw redirect(302, "/");
+  }
 };
 
 const login: Action = async ({ cookies, request }) => {
